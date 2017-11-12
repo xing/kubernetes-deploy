@@ -1,0 +1,20 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: web
+        app: test-partials
+    spec:
+      containers:
+      - name: sleepy-guy
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: ["sleep", "8000"]
+<%= partial "cronjob", name: "cron1", schedule: "0 1 * * *", script: ["echo", "foo"] %>
+<%= partial "cronjob", name: "cron2", schedule: "0 2 * * *", script: ["echo", "bar"] %>
