@@ -162,7 +162,7 @@ module KubernetesDeploy
       }.merge(@bindings)
     end
 
-    def bind_template_variables(binding, variables = self.template_variables)
+    def bind_template_variables(binding, variables = template_variables)
       variables.each do |var_name, value|
         binding.local_variable_set(var_name, value)
       end

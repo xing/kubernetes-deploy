@@ -794,7 +794,7 @@ invalid type for io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta.labels:",
       wait: true,
       allow_protected_ns: false,
       prune: true,
-      bindings: {"cronjob_api_version" => api_version},
+      bindings: { "cronjob_api_version" => api_version },
       sha: nil
     )
     assert_deploy_success(result)
