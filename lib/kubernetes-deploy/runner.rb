@@ -271,7 +271,7 @@ module KubernetesDeploy
       erb_binding = binding
       bind_template_variables(erb_binding)
       erb_binding.eval <<~EVA, __FILE__, __LINE__ + 1
-        def partial(partial, locals)
+        def partial(partial, locals = {})
           partial_binding = binding
           self.bind_template_variables(partial_binding)
           self.bind_template_variables(partial_binding, locals)
