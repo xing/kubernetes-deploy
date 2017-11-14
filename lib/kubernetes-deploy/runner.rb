@@ -84,6 +84,8 @@ module KubernetesDeploy
       @context = context
       @current_sha = current_sha
       @template_dir = File.expand_path(template_dir)
+      @partials_dirs = %w(partials ../partials)
+                         .map{ |d| File.expand_path(File.join(template_dir, d)) }
       @logger = logger
       @kubectl = kubectl_instance
       @bindings = bindings
@@ -166,6 +168,15 @@ module KubernetesDeploy
       variables.each do |var_name, value|
         binding.local_variable_set(var_name, value)
       end
+    end
+
+    def find_partial(name)
+      partial_name = name + '.yaml.erb'
+      @partials_dirs.each do |dir|
+        partial_path = File.join(dir, partial_name)
+        return File.read(partial_path) if File.exist?(partial_path)
+      end
+      raise FatalDeploymentError, "Could not find partial '#{partial_name}' in any of #{$partial_dirs.join(':')}"
     end
 
     private
@@ -275,7 +286,7 @@ module KubernetesDeploy
           partial_binding = binding
           self.bind_template_variables(partial_binding)
           self.bind_template_variables(partial_binding, locals)
-          template = File.read(File.join(@template_dir, "partials", partial + ".yaml.erb"))
+          template = self.find_partial(partial)
           ERB.new(template).result(partial_binding)
         end
       EVA

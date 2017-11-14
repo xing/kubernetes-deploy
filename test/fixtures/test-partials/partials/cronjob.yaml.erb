@@ -17,4 +17,4 @@ spec:
             image: busybox
             imagePullPolicy: IfNotPresent
             args: [ <%= script.map{|a| %Q("#{a}")}.join(", ") %> ]
-          restartPolicy: OnFailure
+          restartPolicy: <%= partial "restart-policy" %>
