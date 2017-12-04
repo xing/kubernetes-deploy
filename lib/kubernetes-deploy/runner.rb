@@ -176,7 +176,7 @@ module KubernetesDeploy
         partial_path = File.join(dir, partial_name)
         return File.read(partial_path) if File.exist?(partial_path)
       end
-      raise FatalDeploymentError, "Could not find partial '#{partial_name}' in any of #{@partial_dirs.join(':')}"
+      raise FatalDeploymentError, "Could not find partial '#{partial_name}' in any of #{@partials_dirs.join(':')}"
     end
 
     private
