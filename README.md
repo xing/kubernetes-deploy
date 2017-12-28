@@ -119,7 +119,44 @@ All templates must be YAML formatted. You can also use ERB. The following local 
 
 You can add additional variables using the `--bindings=BINDINGS` option. For example, `kubernetes-deploy my-app cluster1 --bindings=color=blue,size=large` will expose `color` and `size` in your templates.
 
+#### Using partials
 
+`kubernetes-deploy` supports composing templates from so called partials in order to reduce duplication in Kubernetes YAML files. Given a template directory `DIR`, partials are searched for in `DIR/partials`and in 'DIR/../partials', in that order. They can be embedded in other ERB templates using the helper method `partial`. For example, let's assume an application needs a number of different CronJob resources, on could place a template called `cron`in one of those directories and then use it in the main deployment.yaml.erb like so:
+
+```erb
+<%= partial "cron", name: "cleanup", schedule: "0 0 * * *" args: "cleanup", cpu: "100m", memory: "100Mi" %>
+<%= partial "cron", names: "send-mail'"schedule: "0 0 * * *" args: "send-mails", cpu: "200m", memory: "256Mi" %>
+```
+
+Inside a partial, the parameters can be accesses as normal variables, or via a hash called `locals`. Thus, the `cron` template could like this:
+
+```erb
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cron-<%= name %>
+spec:
+  schedule: <%= schedule %>
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cron-<%= name %>
+            image: ...
+            args: <%= args %>
+            resources:
+              requests:
+                cpu: "<%= cpu %>"
+                memory: <%= memory %>
+          restartPolicy: OnFailure
+```
+
+Note that partial names must have the suffix `.yaml.erb`.
 
 ### Running tasks at the beginning of a deploy
 
