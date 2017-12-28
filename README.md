@@ -125,7 +125,7 @@ You can add additional variables using the `--bindings=BINDINGS` option. For exa
 
 ```erb
 <%= partial "cron", name: "cleanup",   schedule: "0 0 * * *", args: %w(cleanup),    cpu: "100m", memory: "100Mi" %>
-<%= partial "cron", name: "send-mail', schedule: "0 0 * * *", args: %w(send-mails), cpu: "200m", memory: "256Mi" %>
+<%= partial "cron", name: "send-mail", schedule: "0 0 * * *", args: %w(send-mails), cpu: "200m", memory: "256Mi" %>
 ```
 
 Inside a partial, the parameters can be accesses as normal variables, or via a hash called `locals`. Thus, the `cron` template could like this:
