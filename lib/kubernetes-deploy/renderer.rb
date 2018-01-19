@@ -23,7 +23,7 @@ module KubernetesDeploy
       }.merge(@bindings)
     end
 
-    def bind_template_variables(binding, variables = template_variables)
+    def bind_template_variables(binding, variables)
       variables.each do |var_name, value|
         binding.local_variable_set(var_name, value)
       end
@@ -42,12 +42,12 @@ module KubernetesDeploy
       return raw_template unless File.extname(filename) == ".erb"
 
       erb_binding = binding
-      bind_template_variables(erb_binding)
+      bind_template_variables(erb_binding, template_variables)
       erb_binding.eval <<~EVA, __FILE__, __LINE__ + 1
         def partial(partial, locals = {})
           partial_binding = binding
-          self.bind_template_variables(partial_binding)
-          self.bind_template_variables(partial_binding, locals)
+          variables = self.template_variables.merge(locals)
+          self.bind_template_variables(partial_binding, variables)
           template = self.find_partial(partial)
           ERB.new(template).result(partial_binding)
         end
