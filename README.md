@@ -156,7 +156,7 @@ spec:
           restartPolicy: OnFailure
 ```
 
-Note that partial names must have the suffix `.yaml.erb`.
+Supported file names for a given partial `p` are `p.yaml.erb` or `p.yml.erb`, where the first form is preferred.
 
 ### Running tasks at the beginning of a deploy
 

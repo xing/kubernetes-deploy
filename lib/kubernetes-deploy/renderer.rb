@@ -30,12 +30,14 @@ module KubernetesDeploy
     end
 
     def find_partial(name)
-      partial_name = name + '.yaml.erb'
+      partial_names = [name + '.yaml.erb', name + '.yml.erb']
       @partials_dirs.each do |dir|
-        partial_path = File.join(dir, partial_name)
-        return File.read(partial_path) if File.exist?(partial_path)
+        partial_names.each do |partial_name|
+          partial_path = File.join(dir, partial_name)
+          return File.read(partial_path) if File.exist?(partial_path)
+        end
       end
-      raise FatalDeploymentError, "Could not find partial '#{partial_name}' in any of #{@partials_dirs.join(':')}"
+      raise FatalDeploymentError, "Could not find partial '#{name}' in any of #{@partials_dirs.join(':')}"
     end
 
     def render_template(filename, raw_template)
