@@ -867,10 +867,15 @@ invalid type for io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta.labels:",
       wait: true,
       allow_protected_ns: false,
       prune: true,
-      bindings: { "backoff_limit" => 3 },
+      bindings: { },
       sha: nil
     )
     assert_deploy_success(result)
+    assert_logs_match_all([
+      "foo",
+      "bar",
+      "Successfully deployed 3 resources"
+    ], in_order: false)
   end
 
   def test_multiple_configuration_files

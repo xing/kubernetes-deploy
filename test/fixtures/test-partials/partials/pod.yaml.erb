@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: <%= name %>
+spec:
+  restartPolicy: <%= partial "restart-policy" %>
+  activeDeadlineSeconds: 60
+  containers:
+  - name: <%= name %>
+    image: busybox
+    args: <%= args %>

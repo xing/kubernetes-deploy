@@ -16,5 +16,5 @@ spec:
         image: busybox
         imagePullPolicy: IfNotPresent
         command: ["sleep", "8000"]
-<%= partial "job", name: "job1", backoff_limit: backoff_limit, args: ["echo", "foo"] %>
-<%= partial "job", name: "job2", backoff_limit: backoff_limit, args: ["echo", "bar"] %>
+<%= partial "pod", name: "pod1", args: ["echo", "foo"] %>
+<%= partial "pod", name: "pod2", args: ["echo", "bar"] %>
