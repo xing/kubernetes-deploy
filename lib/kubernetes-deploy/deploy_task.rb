@@ -218,7 +218,7 @@ module KubernetesDeploy
 
     def split_templates(filename)
       file_content = File.read(File.join(@template_dir, filename))
-      rendered_content = render_template(filename, file_content)
+      rendered_content = @renderer.render_template(filename, file_content)
       YAML.load_stream(rendered_content) do |doc|
         yield doc unless doc.blank?
       end
@@ -253,10 +253,6 @@ module KubernetesDeploy
 
     def indent_four(str)
       "    " + str.gsub("\n", "\n    ")
-    end
-
-    def render_template(filename, raw_template)
-      @renderer.render_template(filename, raw_template)
     end
 
     def validate_configuration(allow_protected_ns:, prune:)
