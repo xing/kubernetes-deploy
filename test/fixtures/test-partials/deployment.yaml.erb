@@ -16,5 +16,5 @@ spec:
         image: busybox
         imagePullPolicy: IfNotPresent
         command: ["sleep", "8000"]
-<%= partial "cronjob", name: "cron1", schedule: "0 1 * * *", script: ["echo", "foo"] %>
-<%= partial "cronjob", name: "cron2", schedule: "0 2 * * *", script: ["echo", "bar"] %>
+<%= partial "job", name: "job1", backoff_limit: backoff_limit, args: ["echo", "foo"] %>
+<%= partial "job", name: "job2", backoff_limit: backoff_limit, args: ["echo", "bar"] %>

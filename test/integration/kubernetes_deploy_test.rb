@@ -862,18 +862,12 @@ invalid type for io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta.labels:",
   end
 
   def test_partials
-    api_version =
-      if KUBE_CLIENT_VERSION < Gem::Version.new("1.8.0")
-        "batch/v2alpha1"
-      else
-        "batch/v1beta1"
-      end
     result = deploy_dir_without_profiling(
       "test/fixtures/test-partials",
       wait: true,
       allow_protected_ns: false,
       prune: true,
-      bindings: { "cronjob_api_version" => api_version },
+      bindings: { "backoff_limit" => 3 },
       sha: nil
     )
     assert_deploy_success(result)
