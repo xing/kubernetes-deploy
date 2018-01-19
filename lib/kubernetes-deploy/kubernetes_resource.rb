@@ -6,12 +6,16 @@ require 'kubernetes-deploy/kubectl'
 
 module KubernetesDeploy
   class KubernetesResource
-    attr_reader :name, :namespace, :context, :validation_error_msg
+    attr_reader :name, :namespace, :context
     attr_writer :type, :deploy_started_at
 
     TIMEOUT = 5.minutes
     LOG_LINE_COUNT = 250
 
+    DISABLE_FETCHING_LOG_INFO = 'DISABLE_FETCHING_LOG_INFO'
+    DISABLE_FETCHING_EVENT_INFO = 'DISABLE_FETCHING_EVENT_INFO'
+    DISABLED_LOG_INFO_MESSAGE = "collection is disabled by the #{DISABLE_FETCHING_LOG_INFO} env var."
+    DISABLED_EVENT_INFO_MESSAGE = "collection is disabled by the #{DISABLE_FETCHING_EVENT_INFO} env var."
     DEBUG_RESOURCE_NOT_FOUND_MESSAGE = "None found. Please check your usual logging service (e.g. Splunk)."
     UNUSUAL_FAILURE_MESSAGE = <<~MSG
       It is very unusual for this resource type to fail to deploy. Please try the deploy again.
@@ -21,6 +25,8 @@ module KubernetesDeploy
       Kubernetes will continue to attempt to deploy this resource in the cluster, but at this point it is considered unlikely that it will succeed.
       If you have reason to believe it will succeed, retry the deploy to continue to monitor the rollout.
       MSG
+
+    TIMEOUT_OVERRIDE_ANNOTATION = "kubernetes-deploy.shopify.io/timeout-override"
 
     def self.build(namespace:, context:, definition:, logger:)
       opts = { namespace: namespace, context: context, definition: definition, logger: logger }
@@ -39,7 +45,15 @@ module KubernetesDeploy
     end
 
     def timeout
+      return timeout_override if timeout_override.present?
       self.class.timeout
+    end
+
+    def timeout_override
+      return @timeout_override if defined?(@timeout_override)
+      @timeout_override = DurationParser.new(timeout_annotation).parse!.to_i
+    rescue DurationParser::ParsingError
+      @timeout_override = nil
     end
 
     def pretty_timeout_type
@@ -59,20 +73,26 @@ module KubernetesDeploy
       @logger = logger
       @definition = definition
       @statsd_report_done = false
-      @validation_error_msg = nil
+      @validation_errors = []
     end
 
     def validate_definition
-      @validation_error_msg = nil
+      @validation_errors = []
+      validate_timeout_annotation
+
       command = ["create", "-f", file_path, "--dry-run", "--output=name"]
       _, err, st = kubectl.run(*command, log_failure: false)
       return true if st.success?
-      @validation_error_msg = err
+      @validation_errors << err
       false
     end
 
+    def validation_error_msg
+      @validation_errors.join("\n")
+    end
+
     def validation_failed?
-      @validation_error_msg.present?
+      @validation_errors.present?
     end
 
     def id
@@ -124,7 +144,15 @@ module KubernetesDeploy
       :apply
     end
 
+    def sync_debug_info
+      @events = fetch_events unless ENV[DISABLE_FETCHING_EVENT_INFO]
+      @logs = fetch_logs if supports_logs? && !ENV[DISABLE_FETCHING_EVENT_INFO]
+      @debug_info_synced = true
+    end
+
     def debug_message
+      sync_debug_info unless @debug_info_synced
+
       helpful_info = []
       if deploy_failed?
         helpful_info << ColorizedString.new("#{id}: FAILED").red
@@ -140,22 +168,24 @@ module KubernetesDeploy
       end
       helpful_info << "  - Final status: #{status}"
 
-      events = fetch_events
-      if events.present?
+      if @events.present?
         helpful_info << "  - Events (common success events excluded):"
-        events.each do |identifier, event_hashes|
+        @events.each do |identifier, event_hashes|
           event_hashes.each { |event| helpful_info << "      [#{identifier}]\t#{event}" }
         end
+      elsif ENV[DISABLE_FETCHING_EVENT_INFO]
+        helpful_info << "  - Events: #{DISABLED_EVENT_INFO_MESSAGE}"
       else
         helpful_info << "  - Events: #{DEBUG_RESOURCE_NOT_FOUND_MESSAGE}"
       end
 
-      if respond_to?(:fetch_logs)
-        container_logs = fetch_logs
-        if container_logs.blank? || container_logs.values.all?(&:blank?)
+      if supports_logs?
+        if ENV[DISABLE_FETCHING_LOG_INFO]
+          helpful_info << "  - Logs: #{DISABLED_LOG_INFO_MESSAGE}"
+        elsif @logs.blank? || @logs.values.all?(&:blank?)
           helpful_info << "  - Logs: #{DEBUG_RESOURCE_NOT_FOUND_MESSAGE}"
         else
-          sorted_logs = container_logs.sort_by { |_, log_lines| log_lines.length }
+          sorted_logs = @logs.sort_by { |_, log_lines| log_lines.length }
           sorted_logs.each do |identifier, log_lines|
             if log_lines.empty?
               helpful_info << "  - Logs from container '#{identifier}': #{DEBUG_RESOURCE_NOT_FOUND_MESSAGE}"
@@ -277,6 +307,23 @@ module KubernetesDeploy
 
     private
 
+    def validate_timeout_annotation
+      return if timeout_annotation.nil?
+
+      override = DurationParser.new(timeout_annotation).parse!
+      if override <= 0
+        @validation_errors << "#{TIMEOUT_OVERRIDE_ANNOTATION} annotation is invalid: Value must be greater than 0"
+      elsif override > 24.hours
+        @validation_errors << "#{TIMEOUT_OVERRIDE_ANNOTATION} annotation is invalid: Value must be less than 24h"
+      end
+    rescue DurationParser::ParsingError => e
+      @validation_errors << "#{TIMEOUT_OVERRIDE_ANNOTATION} annotation is invalid: #{e}"
+    end
+
+    def timeout_annotation
+      @definition.dig("metadata", "annotations", TIMEOUT_OVERRIDE_ANNOTATION)
+    end
+
     def file
       @file ||= create_definition_tempfile
     end
@@ -287,6 +334,10 @@ module KubernetesDeploy
       file
     ensure
       file&.close
+    end
+
+    def supports_logs?
+      respond_to?(:fetch_logs)
     end
 
     def statsd_tags
