@@ -122,7 +122,7 @@ You can add additional variables using the `--bindings=BINDINGS` option. For exa
 
 #### Using partials
 
-`kubernetes-deploy` supports composing templates from so called partials in order to reduce duplication in Kubernetes YAML files. Given a template directory `DIR`, partials are searched for in `DIR/partials`and in 'DIR/../partials', in that order. They can be embedded in other ERB templates using the helper method `partial`. For example, let's assume an application needs a number of different CronJob resources, one could place a template called `cron`in one of those directories and then use it in the main deployment.yaml.erb like so:
+`kubernetes-deploy` supports composing templates from so called partials in order to reduce duplication in Kubernetes YAML files. Given a template directory `DIR`, partials are searched for in `DIR/partials`and in 'DIR/../partials', in that order. They can be embedded in other ERB templates using the helper method `partial`. For example, let's assume an application needs a number of different CronJob resources, one could place a template called `cron` in one of those directories and then use it in the main deployment.yaml.erb like so:
 
 ```erb
 <%= partial "cron", name: "cleanup",   schedule: "0 0 * * *", args: %w(cleanup),    cpu: "100m", memory: "100Mi" %>
