@@ -43,7 +43,7 @@ module KubernetesDeploy
     def render_template(filename, raw_template)
       return raw_template unless File.extname(filename) == ".erb"
 
-      binding = TemplateContext.new(self).get_binding
+      binding = TemplateContext.new(self).template_binding
       bind_template_variables(binding, template_variables)
 
       ERB.new(raw_template).result(binding)
@@ -57,19 +57,19 @@ module KubernetesDeploy
         @_renderer = renderer
       end
 
-      def get_binding
+      def template_binding
         binding
       end
 
       def partial(partial, locals = {})
-        partial_binding = get_binding
-        partial_binding.local_variable_set("locals", locals)
+        binding = template_binding
+        binding.local_variable_set("locals", locals)
 
         variables = @_renderer.template_variables.merge(locals)
-        @_renderer.bind_template_variables(partial_binding, variables)
+        @_renderer.bind_template_variables(binding, variables)
 
         template = @_renderer.find_partial(partial)
-        ERB.new(template).result(partial_binding)
+        ERB.new(template).result(binding)
       end
     end
   end
