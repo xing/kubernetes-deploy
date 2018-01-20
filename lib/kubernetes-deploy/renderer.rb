@@ -43,22 +43,34 @@ module KubernetesDeploy
     def render_template(filename, raw_template)
       return raw_template unless File.extname(filename) == ".erb"
 
-      erb_binding = binding
-      bind_template_variables(erb_binding, template_variables)
-      erb_binding.eval <<~EVA, __FILE__, __LINE__ + 1
-        def partial(partial, locals = {})
-          partial_binding = binding
-          variables = self.template_variables.merge(locals)
-          self.bind_template_variables(partial_binding, variables)
-          template = self.find_partial(partial)
-          ERB.new(template).result(partial_binding)
-        end
-      EVA
-      erb_template = ERB.new(raw_template)
-      erb_template.result(erb_binding)
+      binding = TemplateContext.new(self).get_binding
+      bind_template_variables(binding, template_variables)
+
+      ERB.new(raw_template).result(binding)
     rescue NameError => e
       @logger.summary.add_paragraph("Error from renderer:\n  #{e.message.tr("\n", ' ')}")
       raise FatalDeploymentError, "Template '#{filename}' cannot be rendered"
+    end
+
+    class TemplateContext
+      def initialize(renderer)
+        @_renderer = renderer
+      end
+
+      def get_binding
+        binding
+      end
+
+      def partial(partial, locals = {})
+        partial_binding = get_binding
+        partial_binding.local_variable_set("locals", locals)
+
+        variables = @_renderer.template_variables.merge(locals)
+        @_renderer.bind_template_variables(partial_binding, variables)
+
+        template = @_renderer.find_partial(partial)
+        ERB.new(template).result(partial_binding)
+      end
     end
   end
 end
