@@ -68,17 +68,19 @@ This repo also includes related tools for [running tasks](#kubernetes-run) and [
 ## Prerequisites
 
 * Ruby 2.3+
-* Your cluster must be running Kubernetes v1.6.0 or higher
+* Your cluster must be running Kubernetes v1.7.0 or higher<sup>1</sup>
 * Each app must have a deploy directory containing its Kubernetes templates (see [Templates](#templates))
 * You must remove the` kubectl.kubernetes.io/last-applied-configuration` annotation from any resources in the namespace that are not included in your deploy directory. This annotation is added automatically when you create resources with `kubectl apply`. `kubernetes-deploy` will prune any resources that have this annotation and are not in the deploy directory.**
-* Each app managed by `kubernetes-deploy` must have its own exclusive Kubernetes namespace.**
+* Each app managed by `kubernetes-deploy` must have its own exclusive Kubernetes namespace.<sup>2</sup>
 
+<sup>1</sup> We run integration tests against these Kubernetes versions. Kubernetes v1.6 was officially supported in gem versions < 0.16. Kubernetes v1.5 was officially supported in gem versions < 0.12.
 
-**This requirement can be bypassed with the `--no-prune` option, but it is not recommended.
+<sup>2</sup> This requirement can be bypassed with the `--no-prune` option, but it is not recommended.
+
 
 ## Installation
 
-1. [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-binary-via-curl) (requires v1.6.0 or higher) and make sure it is available in your $PATH
+1. [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-binary-via-curl) (requires v1.7.0 or higher) and make sure it is available in your $PATH
 2. Set up your [kubeconfig file](https://kubernetes.io/docs/tasks/access-application-cluster/authenticate-across-clusters-kubeconfig/) for access to your cluster(s).
 3. `gem install kubernetes-deploy`
 
@@ -172,6 +174,8 @@ before the deployment is considered successful.
   In other words, the number of new pods that must be ready is equal to `spec.replicas` - `strategy.RollingUpdate.maxUnavailable`
   (converted from percentages by rounding up, if applicable). This option is only valid for deployments
   that use the `RollingUpdate` strategy.
+  - Percent (e.g. 90%): The deploy is successful when the number of new pods that are ready is equal to
+  `spec.replicas` * Percent.
 
 ### Running tasks at the beginning of a deploy
 
@@ -284,7 +288,7 @@ With this done, you can use the following command to restart all of them:
 
 ## Prerequisites
 
-* You've already deployed a [`PodTemplate`](https://kubernetes.io/docs/api-reference/v1.6/#podtemplate-v1-core) object with field `template` containing a `Pod` specification that does not include the `apiVersion` or `kind` parameters. An example is provided in this repo in `test/fixtures/hello-cloud/template-runner.yml`.
+* You've already deployed a [`PodTemplate`](https://kubernetes.io/docs/api-reference/v1.9/#podtemplate-v1-core) object with field `template` containing a `Pod` specification that does not include the `apiVersion` or `kind` parameters. An example is provided in this repo in `test/fixtures/hello-cloud/template-runner.yml`.
 * The `Pod` specification in that template has a container named `task-runner`.
 
 Based on this specification `kubernetes-run` will create a new pod with the entrypoint of the `task-runner ` container overridden with the supplied arguments.
@@ -310,7 +314,7 @@ Based on this specification `kubernetes-run` will create a new pod with the entr
 
 If you work for Shopify, just run `dev up`, but otherwise:
 
-1. [Install kubectl version 1.6.0 or higher](https://kubernetes.io/docs/user-guide/prereqs/) and make sure it is in your path
+1. [Install kubectl version 1.7.0 or higher](https://kubernetes.io/docs/user-guide/prereqs/) and make sure it is in your path
 2. [Install minikube](https://kubernetes.io/docs/getting-started-guides/minikube/#installation) (required to run the test suite)
 3. Check out the repo
 4. Run `bin/setup` to install dependencies
