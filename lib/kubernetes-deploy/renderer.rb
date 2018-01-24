@@ -2,6 +2,8 @@
 
 require 'erb'
 require 'securerandom'
+require 'yaml'
+require 'json'
 
 module KubernetesDeploy
   class Renderer
@@ -46,8 +48,15 @@ module KubernetesDeploy
       binding = TemplateContext.new(self).template_binding
       bind_template_variables(binding, template_variables)
 
-      ERB.new(raw_template).result(binding)
-    rescue NameError => e
+      src = ERB.new(raw_template).result(binding)
+      if src =~ /^--- *\n/m
+        src
+      else
+        # Make sure indentation isn't a problem, by producing a single line of
+        # parseable YAML. Note that JSON is a subset of YAML.
+        JSON.generate(YAML.load(src))
+      end
+    rescue StandardError => e
       @logger.summary.add_paragraph("Error from renderer:\n  #{e.message.tr("\n", ' ')}")
       raise FatalDeploymentError, "Template '#{filename}' cannot be rendered"
     end
