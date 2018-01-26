@@ -803,14 +803,7 @@ invalid type for io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta.labels:",
   end
 
   def test_partials
-    result = deploy_dir_without_profiling(
-      "test/fixtures/test-partials",
-      wait: true,
-      allow_protected_ns: false,
-      prune: true,
-      bindings: {},
-      sha: nil
-    )
+    result = deploy_raw_fixtures("test-partials", bindings: { 'supports_partials' => 'true' })
     assert_deploy_success(result)
     assert_logs_match_all([
       "foo",
