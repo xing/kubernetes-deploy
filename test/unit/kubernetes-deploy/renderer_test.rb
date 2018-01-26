@@ -48,6 +48,12 @@ EOY
     end
   end
 
+  def test_non_existent_partial_raises
+    assert_raises(KubernetesDeploy::FatalDeploymentError) do
+      render('including-non-existent-partial.yaml.erb')
+    end
+  end
+
   private
 
   def render(filename)
