@@ -48,13 +48,15 @@ module KubernetesDeploy
       erb_binding = TemplateContext.new(self).template_binding
       bind_template_variables(erb_binding, template_variables)
 
-      src = ERB.new(raw_template).result(erb_binding)
-      if src =~ /^--- *\n/m
-        src
+      expanded_template = ERB.new(raw_template).result(erb_binding)
+      if expanded_template =~ /^--- *\n/m
+        # If we're at top level we don't need to worry about the result being
+        # included in another partial.
+        expanded_template
       else
         # Make sure indentation isn't a problem, by producing a single line of
         # parseable YAML. Note that JSON is a subset of YAML.
-        JSON.generate(YAML.load(src))
+        JSON.generate(YAML.load(expanded_template))
       end
     rescue StandardError => e
       @logger.summary.add_paragraph("Error from renderer:\n  #{e.message.tr("\n", ' ')}")
