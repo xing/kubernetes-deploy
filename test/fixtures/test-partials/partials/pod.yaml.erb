@@ -4,7 +4,7 @@ kind: Pod
 metadata:
   name: <%= name %>
 spec:
-  <%= partial "restart-policy" %>
+  restartPolicy: <%= partial "restart-policy" %>
   activeDeadlineSeconds: 60
   containers:
   - name: <%= name %>
