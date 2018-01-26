@@ -48,16 +48,7 @@ module KubernetesDeploy
       erb_binding = TemplateContext.new(self).template_binding
       bind_template_variables(erb_binding, template_variables)
 
-      expanded_template = ERB.new(raw_template).result(erb_binding)
-      if expanded_template =~ /^--- *\n/m
-        # If we're at top level we don't need to worry about the result being
-        # included in another partial.
-        expanded_template
-      else
-        # Make sure indentation isn't a problem, by producing a single line of
-        # parseable YAML. Note that JSON is a subset of YAML.
-        JSON.generate(YAML.load(expanded_template))
-      end
+      ERB.new(raw_template).result(erb_binding)
     rescue StandardError => e
       @logger.summary.add_paragraph("Error from renderer:\n  #{e.message.tr("\n", ' ')}")
       raise FatalDeploymentError, "Template '#{filename}' cannot be rendered"
@@ -80,7 +71,20 @@ module KubernetesDeploy
         @_renderer.bind_template_variables(erb_binding, variables)
 
         template = @_renderer.find_partial(partial)
-        ERB.new(template).result(erb_binding)
+        expanded_template = ERB.new(template, nil, '-').result(erb_binding)
+        if expanded_template =~ /^--- *\n/m
+          # If we're at top level we don't need to worry about the result being
+          # included in another partial.
+          expanded_template
+        else
+          begin
+            # Make sure indentation isn't a problem, by producing a single line
+            # of parseable YAML. Note that JSON is a subset of YAML.
+            JSON.generate(YAML.load(expanded_template))
+          rescue Psych::SyntaxError => e
+            raise "#{e.class}#{e}. Partial did not expand to valid YAML, source: #{expanded_template}"
+          end
+        end
       end
     end
   end
