@@ -42,6 +42,12 @@ EOY
     assert_equal expected, actual
   end
 
+  def test_invalid_partial_raises
+    assert_raises(KubernetesDeploy::FatalDeploymentError) do
+      render('broken-partial-inclusion.yaml.erb')
+    end
+  end
+
   private
 
   def render(filename)
