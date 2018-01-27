@@ -10,11 +10,6 @@ spec:
       labels:
         name: web
         app: test-partials
-    spec:
-      containers:
-      - name: sleepy-guy
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: ["sleep", "8000"]
+    spec: <%= partial 'sleepy-pod-spec' %>
 <%= partial "pod", name: "pod1", args: ["echo", "foo"] %>
 <%= partial "pod", name: "pod2", args: ["echo", "bar"] %>
