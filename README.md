@@ -131,7 +131,7 @@ You can add additional variables using the `--bindings=BINDINGS` option. For exa
 <%= partial "cron", name: "send-mail", schedule: "0 0 * * *", args: %w(send-mails), cpu: "200m", memory: "256Mi" %>
 ```
 
-Inside a partial, the parameters can be accessed as normal variables, or via a hash called `locals`. Thus, the `cron` template could like this:
+Inside a partial, parameters can be accessed as normal variables, or via a hash called `locals`. Thus, the `cron` template could like this:
 
 ```erb
 ---
@@ -160,6 +160,54 @@ spec:
 ```
 
 Supported file names for a given partial `p` are `p.yaml.erb` or `p.yml.erb`, where the first form is preferred.
+
+##### Limitations when using partials
+
+Partials can be included almost everywhere in ERB templates, with one notable exception: you cannot use a partial to define a subset of fields. For example, given a partial `p` defining two fields 'a' and 'b',
+
+```yaml
+a: 1
+b: 2
+```
+
+you cannot do this:
+
+```erb
+x: yz
+<%= partial 'p' %>
+```
+
+hoping to get
+
+```yaml
+x: yz
+a: 1
+b: 2
+```
+
+but you can do:
+
+```erb
+x:
+  <%= partial 'p' %>
+```
+
+or even
+
+```erb
+x: <%= partial 'p' %>
+```
+
+which both will result in
+
+```yaml
+x:
+  a: 1
+  b: 2
+```
+
+This is a limitation of the current implementation.
+
 
 ### Customizing behaviour with annotations
 - `kubernetes-deploy.shopify.io/timeout-override`: Override the tool's hard timeout for one specific resource. Both full ISO8601 durations and the time portion of ISO8601 durations are valid. Value must be between 1 second and 24 hours.

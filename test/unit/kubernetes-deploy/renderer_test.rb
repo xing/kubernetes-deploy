@@ -54,6 +54,20 @@ EOY
     end
   end
 
+  def test_nesting_fields
+    expected = <<EOY
+---
+x:
+  c: c3
+  d: d4
+  foo: bar
+EOY
+    actual = YAML.dump(YAML.load(render('nest-as-rhs.yaml.erb')))
+    assert_equal expected, actual
+    actual = YAML.dump(YAML.load(render('nest-indented.yaml.erb')))
+    assert_equal expected, actual
+  end
+
   private
 
   def render(filename)
