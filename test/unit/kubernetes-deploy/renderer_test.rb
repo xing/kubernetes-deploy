@@ -13,29 +13,29 @@ class RendererTest < KubernetesDeploy::TestCase
   end
 
   def test_can_render_template_with_correct_indentation
-    expected = <<EOY
----
-a: 1
-b: 2
----
-c: c3
-d: d4
-foo: bar
----
-e: e5
-f: f6
----
-foo: baz
----
-value: 4
-step:
-  value: 3
-  step:
-    value: 2
-    step:
-      value: 1
-      result: 24
-EOY
+    expected = <<~EOY
+      ---
+      a: 1
+      b: 2
+      ---
+      c: c3
+      d: d4
+      foo: bar
+      ---
+      e: e5
+      f: f6
+      ---
+      foo: baz
+      ---
+      value: 4
+      step:
+        value: 3
+        step:
+          value: 2
+          step:
+            value: 1
+            result: 24
+      EOY
     actual = YAML.load_stream(render("partials_test.yaml.erb")).map do |t|
       YAML.dump(t)
     end.join
@@ -55,13 +55,13 @@ EOY
   end
 
   def test_nesting_fields
-    expected = <<EOY
----
-x:
-  c: c3
-  d: d4
-  foo: bar
-EOY
+    expected = <<~EOY
+      ---
+      x:
+        c: c3
+        d: d4
+        foo: bar
+      EOY
     actual = YAML.dump(YAML.load(render('nest-as-rhs.yaml.erb')))
     assert_equal expected, actual
     actual = YAML.dump(YAML.load(render('nest-indented.yaml.erb')))
