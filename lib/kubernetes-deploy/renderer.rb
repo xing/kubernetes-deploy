@@ -18,6 +18,20 @@ module KubernetesDeploy
       @id = current_sha[0...8] + "-#{SecureRandom.hex(4)}" if current_sha
     end
 
+    def render_template(filename, raw_template)
+      return raw_template unless File.extname(filename) == ".erb"
+
+      erb_binding = TemplateContext.new(self).template_binding
+      bind_template_variables(erb_binding, template_variables)
+
+      ERB.new(raw_template).result(erb_binding)
+    rescue StandardError => e
+      @logger.summary.add_paragraph("Error from renderer:\n  #{e.message.tr("\n", ' ')}")
+      raise FatalDeploymentError, "Template '#{filename}' cannot be rendered"
+    end
+
+    private
+
     def template_variables
       {
         'current_sha' => @current_sha,
@@ -42,18 +56,6 @@ module KubernetesDeploy
       raise FatalDeploymentError, "Could not find partial '#{name}' in any of #{@partials_dirs.join(':')}"
     end
 
-    def render_template(filename, raw_template)
-      return raw_template unless File.extname(filename) == ".erb"
-
-      erb_binding = TemplateContext.new(self).template_binding
-      bind_template_variables(erb_binding, template_variables)
-
-      ERB.new(raw_template).result(erb_binding)
-    rescue StandardError => e
-      @logger.summary.add_paragraph("Error from renderer:\n  #{e.message.tr("\n", ' ')}")
-      raise FatalDeploymentError, "Template '#{filename}' cannot be rendered"
-    end
-
     class TemplateContext
       def initialize(renderer)
         @_renderer = renderer
@@ -67,23 +69,23 @@ module KubernetesDeploy
         erb_binding = template_binding
         erb_binding.local_variable_set("locals", locals)
 
-        variables = @_renderer.template_variables.merge(locals)
-        @_renderer.bind_template_variables(erb_binding, variables)
+        variables = @_renderer.__send__(:template_variables).merge(locals)
+        @_renderer.__send__(:bind_template_variables, erb_binding, variables)
 
-        template = @_renderer.find_partial(partial)
+        template = @_renderer.__send__(:find_partial, partial)
         expanded_template = ERB.new(template, nil, '-').result(erb_binding)
-        if expanded_template =~ /^--- *\n/m
-          # If we're at top level we don't need to worry about the result being
-          # included in another partial.
-          expanded_template
-        else
-          begin
-            # Make sure indentation isn't a problem, by producing a single line
-            # of parseable YAML. Note that JSON is a subset of YAML.
-            JSON.generate(YAML.load(expanded_template))
-          rescue Psych::SyntaxError => e
-            raise "#{e.class}#{e}. Partial did not expand to valid YAML, source: #{expanded_template}"
-          end
+
+        # If we're at top level we don't need to worry about the result being
+        # included in another partial.
+        return expanded_template if expanded_template =~ /^--- *\n/m
+
+        # If we're not at the top level, we make sure indentation isn't a
+        # problem, by producing a single line of parseable YAML. Note that JSON
+        # is a subset of YAML.
+        begin
+          JSON.generate(YAML.load(expanded_template))
+        rescue Psych::SyntaxError => e
+          raise "#{e.class}#{e}. Partial did not expand to valid YAML, source: #{expanded_template}"
         end
       end
     end
