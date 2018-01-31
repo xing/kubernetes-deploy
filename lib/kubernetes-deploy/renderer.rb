@@ -10,8 +10,6 @@ module KubernetesDeploy
     def initialize(current_sha:, template_dir:, logger:, bindings: {})
       @current_sha = current_sha
       @template_dir = template_dir
-      @partials_dirs =
-        %w(partials ../partials).map { |d| File.expand_path(File.join(@template_dir, d)) }
       @logger = logger
       @bindings = bindings
       # Max length of podname is only 63chars so try to save some room by truncating sha to 8 chars
@@ -45,15 +43,16 @@ module KubernetesDeploy
       end
     end
 
-    def find_partial(name)
-      partial_names = [name + '.yaml.erb', name + '.yml.erb']
-      @partials_dirs.each do |dir|
-        partial_names.each do |partial_name|
-          partial_path = File.join(dir, partial_name)
-          return File.read(partial_path) if File.exist?(partial_path)
-        end
+    def partials_array(name)
+      ["/partials/#{name}.y{a,}ml.erb", "../partials/#{name}.y{a,}ml.erb"].map do |d|
+        File.join(File.expand_path(@template_dir), d)
       end
-      raise FatalDeploymentError, "Could not find partial '#{name}' in any of #{@partials_dirs.join(':')}"
+    end
+
+    def find_partial(name)
+      files = Dir.glob(partials_array(name))
+      return File.read(files.first) if files.first
+      raise FatalDeploymentError, "Partial '#{name}' not found. Looked for: #{partials_array(name).join(', ')}"
     end
 
     class TemplateContext
