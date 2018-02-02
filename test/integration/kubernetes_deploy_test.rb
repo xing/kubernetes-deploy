@@ -806,10 +806,16 @@ invalid type for io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta.labels:",
     result = deploy_raw_fixtures("test-partials", bindings: { 'supports_partials' => 'true' })
     assert_deploy_success(result)
     assert_logs_match_all([
-      "foo",
-      "bar",
-      "Successfully deployed 3 resources"
+      "log from pod1",
+      "log from pod2",
+      "Successfully deployed 6 resources"
     ], in_order: false)
+
+    map = kubeclient.get_config_map('config-for-pod1', @namespace).data
+    assert_equal 'true', map['supports_partials']
+
+    map = kubeclient.get_config_map('independent-configmap', @namespace).data
+    assert_equal 'renderer test', map['value']
   end
 
   def test_roll_back_a_bad_deploy

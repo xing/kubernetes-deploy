@@ -11,5 +11,6 @@ spec:
         name: web
         app: test-partials
     spec: <%= partial 'sleepy-pod-spec' %>
-<%= partial "pod", name: "pod1", args: ["echo", "foo"] %>
-<%= partial "pod", name: "pod2", args: ["echo", "bar"] %>
+<%= partial "pod", name: "pod1", args: ["echo", "log from pod1"] %>
+<%= partial "independent-configmap", data: "renderer test" %>
+<%= partial "pod", name: "pod2", args: ["echo", "log from pod2"] %>

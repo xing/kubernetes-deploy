@@ -159,7 +159,7 @@ spec:
           restartPolicy: OnFailure
 ```
 
-Supported file names for a given partial `p` are `p.yaml.erb` or `p.yml.erb`, where the first form is preferred.
+Both `.yaml.erb` and `.yml.erb` file extensions are supported. Templates must refer to the bare filename (e.g. use `partial: 'cron'` to reference `cron.yaml.erb`).
 
 ##### Limitations when using partials
 
@@ -172,7 +172,7 @@ b: 2
 
 you cannot do this:
 
-```erb
+```yaml
 x: yz
 <%= partial 'p' %>
 ```
@@ -187,14 +187,14 @@ b: 2
 
 but you can do:
 
-```erb
+```yaml
 x:
   <%= partial 'p' %>
 ```
 
 or even
 
-```erb
+```yaml
 x: <%= partial 'p' %>
 ```
 
