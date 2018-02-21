@@ -141,6 +141,38 @@ class KubernetesDeployTest < KubernetesDeploy::IntegrationTest
     ])
   end
 
+  def test_invalid_yaml_in_partial_prints_helpful_error
+    refute deploy_raw_fixtures("invalid-partials")
+    assert_logs_match_all([
+      "Result: FAILURE",
+      %r{Template '.*/partials/invalid.yml.erb' cannot be rendered \(included from: include-invalid-partial.yml.erb\)},
+      "Error from renderer:",
+      "  (<unknown>): mapping values are not allowed in this context",
+      "Rendered template content:",
+      "containers:",
+      "- name: invalid-container",
+      "notField: notval:"
+    ], in_order: true)
+
+    # make sure we're not displaying duplicate errors
+    refute_logs_match("Template 'include-invalid-partial.yml.erb' cannot be rendered")
+    assert_logs_match("Rendered template content:", 1)
+    assert_logs_match("Error from renderer:", 1)
+  end
+
+  def test_missing_nested_partial_prints_helpful_error
+    refute deploy_raw_fixtures("missing-partials")
+    assert_logs_match_all([
+      "Result: FAILURE",
+      %r{Could not find partial 'missing' in any of.*fixtures/missing-partials/partials:.*/fixtures/partials},
+      "(included from: include-missing-partials.yml.erb -> nest-missing-partial.yml.erb)"
+    ], in_order: true)
+
+    # make sure we're not displaying empty errors from the parents
+    refute_logs_match("Rendered template content:")
+    refute_logs_match("Error from renderer:")
+  end
+
   def test_invalid_k8s_spec_that_is_valid_yaml_fails_fast_and_prints_template
     result = deploy_fixtures("hello-cloud", subset: ["configmap-data.yml"]) do |fixtures|
       configmap = fixtures["configmap-data.yml"]["ConfigMap"].first

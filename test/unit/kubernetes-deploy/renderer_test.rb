@@ -43,15 +43,20 @@ class RendererTest < KubernetesDeploy::TestCase
   end
 
   def test_invalid_partial_raises
-    assert_raises(KubernetesDeploy::FatalDeploymentError) do
+    err = assert_raises(KubernetesDeploy::FatalDeploymentError) do
       render('broken-partial-inclusion.yaml.erb')
     end
+    included_from = "included from: broken-partial-inclusion.yaml.erb -> broken.yml.erb"
+    assert_match %r{Template '.*/partials/simple.yaml.erb' cannot be rendered \(#{included_from}\)}, err.message
   end
 
   def test_non_existent_partial_raises
-    assert_raises(KubernetesDeploy::FatalDeploymentError) do
+    err = assert_raises(KubernetesDeploy::FatalDeploymentError) do
       render('including-non-existent-partial.yaml.erb')
     end
+    base = "Could not find partial 'foobarbaz' in any of"
+    included_from = "included from: including-non-existent-partial.yaml.erb"
+    assert_match %r{#{base} .*/fixtures/for_unit_tests/partials:.*/fixtures/partials \(#{included_from}\)}, err.message
   end
 
   def test_nesting_fields
