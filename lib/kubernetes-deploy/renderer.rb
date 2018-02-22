@@ -42,11 +42,11 @@ module KubernetesDeploy
       raise FatalDeploymentError, "Template '#{filename}' cannot be rendered"
     end
 
-    def render_partial(partial, locals, erb_binding)
-      erb_binding.local_variable_set("locals", locals)
-
+    def render_partial(partial, locals)
       variables = template_variables.merge(locals)
+      erb_binding = TemplateContext.new(self).template_binding
       bind_template_variables(erb_binding, variables)
+      erb_binding.local_variable_set("locals", locals)
 
       partial_path = find_partial(partial)
       template = File.read(partial_path)
@@ -109,7 +109,7 @@ module KubernetesDeploy
       end
 
       def partial(partial, locals = {})
-        @_renderer.render_partial(partial, locals, template_binding)
+        @_renderer.render_partial(partial, locals)
       end
     end
   end
